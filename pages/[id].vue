@@ -1,12 +1,16 @@
 <template>
+    <div class="absolute top-5 left-5 rounded-full w-16 h-16 bg-gray-700 flex justify-center items-center hover:scale-105 hover:bg-gray-800 transition-all duration-200">
+        <svg class="w-8 h-8" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" fill="#000000">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier"><path fill="#ffffff" d="M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z"></path>
+                <path fill="#ffffff" d="m237.248 512 265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z"></path>
+            </g>
+        </svg>
+    </div>
     <div class="bg-gray-900 h-screen w-full flex justify-center items-center">
         <div class="bg-gray-700 w-full max-w-4xl h-[90vh] rounded-lg flex flex-col justify-between p-4">
             <div class="overflow-y-auto p-2 space-y-4">
-                <!-- <div v-for="(message, index) in messages" :key="index" :class="{'bg-gray-900': index%2 != 0, 'bg-gray-800': index%2 == 0}" class="text-white p-3 rounded-md">
-                    {{ message }}
-                    <li>TEST</li>
-                    <li>TEST2</li>
-                </div> -->
                 <div v-for="(message, index) in messages" :key="index"
                     :class="{'bg-gray-900': index%2 != 0, 'bg-gray-800': index%2 == 0}"
                     class="text-white p-3 rounded-md"
@@ -35,10 +39,11 @@
             return {
                 message: '',
                 messages: [],
+                agent: 1
             };
         },
         async mounted(){
-            await this.initializeAgent(1);
+            await this.initializeAgent();
         },
         watch: {
         },
@@ -82,7 +87,7 @@
                     const requestOptions = {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: this.message, agent: 2, initial: false })
+                        body: JSON.stringify({ message: this.message, agent: this.agent, initial: false })
                     };
                     
                     this.message = '';
@@ -98,32 +103,43 @@
                     }
                 }
             },
-            async initializeAgent(agent){
+            async initializeAgent(){
+                // get slug from page
+                
+                var agent = this.$route.params.id;
+                
+                if (agent == 'george'){
+                    this.agent = 1;
+                }
+                else if (agent == 'clara'){
+                    this.agent = 2;
+                }
+                else if (agent == 'michael'){
+                    this.agent = 3;
+                }
+                else {
+                    window.location.href = '/'
+                }
+
                 this.messages.push('')
-                if (agent == 1){
-                    const url = '/api/sendMessage';
-                    const requestOptions = {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: 'Introduce yourself in detail!', agent: 2, initial: true })
-                    };
 
-                    try {
-                        const response = await fetch(url, requestOptions);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        this.handleStream(response.body);
-                    } catch (error) {
-                        console.error('Error sending message:', error);
+                const url = '/api/sendMessage';
+                const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'Introduce yourself in detail!', agent: this.agent, initial: true })
+                };
+
+                try {
+                    const response = await fetch(url, requestOptions);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
                     }
+                    this.handleStream(response.body);
+                } catch (error) {
+                    console.error('Error sending message:', error);
                 }
-                else if (agent == 2){
-
-                }
-                else{
-
-                }
+                
             },
             handleStream(stream) {
             const reader = stream.getReader();
@@ -147,6 +163,7 @@
                         const json = JSON.parse(line);
                         // this.responses += json.response;
                         this.messages[this.messages.length -1 ] += json.response;
+                        this.messages[this.messages.length -1 ] = this.messages[this.messages.length -1].replace('*', '')
                     } catch (error) {
                         console.error('Error parsing JSON:', error);
                     }
